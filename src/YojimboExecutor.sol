@@ -14,15 +14,17 @@ contract YojimboExecutor {
   IERC20 public SUSHI;
   ISushiBar public xSUSHI;
 
+  /// @notice Initializes the executor for a specific SushiBar and grants it max SUSHI allowance.
+  /// @param _xSUSHI SushiBar contract the executor should interact with.
   constructor(ISushiBar _xSUSHI) {
     xSUSHI = _xSUSHI;
     SUSHI = xSUSHI.sushi();
     SUSHI.forceApprove(address(xSUSHI), type(uint256).max);
   }
 
-  /// @notice Deposit SUSHI -> mint xSUSHI, send to recipient
-  /// @param amountIn If 0, uses SUSHI balance
-  /// @param recipient Who receives xSUSHI
+  /// @notice Deposits SUSHI that already sits on this contract into the SushiBar and forwards the minted xSUSHI.
+  /// @param amountIn Exact SUSHI amount to deposit; supply 0 to use the full SUSHI balance of this contract.
+  /// @param recipient Address that should receive the freshly minted xSUSHI.
   function enterSushiBar(uint256 amountIn, address recipient) external {
     if (amountIn == 0) {
       amountIn = SUSHI.balanceOf(address(this));
@@ -33,9 +35,9 @@ contract YojimboExecutor {
     xSUSHI.safeTransfer(recipient, xSUSHI.balanceOf(address(this)));
   }
 
-  /// @notice Burn xSUSHI -> withdraw SUSHI, send to recipient
-  /// @param amountIn If 0, uses xSUSHI balance
-  /// @param recipient Who receives SUSHI
+  /// @notice Burns xSUSHI held by this contract and transfers the redeemed SUSHI to the recipient.
+  /// @param amountIn Exact xSUSHI amount to redeem; supply 0 to use the full xSUSHI balance of this contract.
+  /// @param recipient Address that should receive the withdrawn SUSHI.
   function leaveSushiBar(uint256 amountIn, address recipient) external {
     if (amountIn == 0) {
       amountIn = xSUSHI.balanceOf(address(this));
@@ -46,7 +48,9 @@ contract YojimboExecutor {
     SUSHI.safeTransfer(recipient, SUSHI.balanceOf(address(this)));
   }
 
-  /// @notice Quotes how many xSUSHI are minted for depositing `amountIn` SUSHI.
+  /// @notice Quotes how many xSUSHI the SushiBar would mint for a prospective deposit.
+  /// @param amountIn SUSHI amount to simulate depositing via {enterSushiBar}.
+  /// @return amountOut Estimated xSUSHI that would be minted.
   function quoteEnterSushiBar(uint256 amountIn) external view returns (uint256 amountOut) {
     uint256 totalShares = xSUSHI.totalSupply();
     uint256 totalSushi = SUSHI.balanceOf(address(xSUSHI));
@@ -58,13 +62,15 @@ contract YojimboExecutor {
     return amountIn * totalShares / totalSushi;
   }
 
-  /// @notice Quotes how much SUSHI is returned for redeeming `amountIn` xSUSHI.
+  /// @notice Quotes how much SUSHI the SushiBar would return for a prospective redemption.
+  /// @param amountIn xSUSHI amount to simulate redeeming via {leaveSushiBar}.
+  /// @return amountOut Estimated SUSHI that would be withdrawn.
   function quoteLeaveSushiBar(uint256 amountIn) external view returns (uint256 amountOut) {
     uint256 totalShares = xSUSHI.totalSupply();
     uint256 totalSushi = SUSHI.balanceOf(address(xSUSHI));
 
     if (totalShares == 0) {
-        return 0;
+      return 0;
     }
 
     return amountIn * totalSushi / totalShares;
