@@ -102,6 +102,33 @@ contract YojimboExecutorTest is Test {
         );
     }
 
+    function testQuoteEnterSushiBar() public {
+        uint256 amountIn = 50 ether;
+        assertEq(exec.quoteEnterSushiBar(amountIn), amountIn, "first deposit should mint 1:1");
+
+        SUSHI.mint(address(this), 100 ether);
+        SUSHI.approve(address(xSUSHI), type(uint256).max);
+        xSUSHI.enter(100 ether);
+
+        uint256 expected =
+            (amountIn * xSUSHI.totalSupply()) /
+            SUSHI.balanceOf(address(xSUSHI));
+        assertEq(exec.quoteEnterSushiBar(amountIn), expected, "quoteEnterSushiBar mismatches bar math");
+    }
+
+    function testQuoteLeaveSushiBar() public {
+        SUSHI.mint(address(this), 120 ether);
+        SUSHI.approve(address(xSUSHI), type(uint256).max);
+        xSUSHI.enter(120 ether);
+
+        uint256 sharesIn = 40 ether;
+        uint256 expected =
+            (sharesIn * SUSHI.balanceOf(address(xSUSHI))) /
+            xSUSHI.totalSupply();
+        assertEq(exec.quoteLeaveSushiBar(sharesIn), expected, "quoteLeaveSushiBar mismatches bar math");
+        assertEq(exec.quoteLeaveSushiBar(0), 0, "quoteLeaveSushiBar zero input should be zero");
+    }
+
     /* ============ RedSnwapper integration (minOut enforced) ============ */
 
     function testSnwap_Enter_Succeeds_WhenMinMet() public {

@@ -45,4 +45,28 @@ contract YojimboExecutor {
 
     SUSHI.safeTransfer(recipient, SUSHI.balanceOf(address(this)));
   }
+
+  /// @notice Quotes how many xSUSHI are minted for depositing `amountIn` SUSHI.
+  function quoteEnterSushiBar(uint256 amountIn) external view returns (uint256 amountOut) {
+    uint256 totalShares = xSUSHI.totalSupply();
+    uint256 totalSushi = SUSHI.balanceOf(address(xSUSHI));
+
+    if (totalShares == 0 || totalSushi == 0) {
+      return amountIn;
+    }
+
+    return amountIn * totalShares / totalSushi;
+  }
+
+  /// @notice Quotes how much SUSHI is returned for redeeming `amountIn` xSUSHI.
+  function quoteLeaveSushiBar(uint256 amountIn) external view returns (uint256 amountOut) {
+    uint256 totalShares = xSUSHI.totalSupply();
+    uint256 totalSushi = SUSHI.balanceOf(address(xSUSHI));
+
+    if (totalShares == 0) {
+        return 0;
+    }
+
+    return amountIn * totalSushi / totalShares;
+  }
 }
