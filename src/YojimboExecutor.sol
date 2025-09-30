@@ -28,11 +28,9 @@ contract YojimboExecutor {
       amountIn = SUSHI.balanceOf(address(this));
     }
 
-    uint256 beforeShares = xSUSHI.balanceOf(address(this));
     xSUSHI.enter(amountIn);
-    uint256 minted = xSUSHI.balanceOf(address(this)) - beforeShares;
 
-    xSUSHI.safeTransfer(recipient, minted);
+    xSUSHI.safeTransfer(recipient, xSUSHI.balanceOf(address(this)));
   }
 
   /// @notice Burn xSUSHI -> withdraw SUSHI, send to recipient
@@ -43,11 +41,8 @@ contract YojimboExecutor {
       amountIn = xSUSHI.balanceOf(address(this));
     }
 
-    IERC20 SUSHI = xSUSHI.sushi();
-    uint256 before = SUSHI.balanceOf(address(this));
     xSUSHI.leave(amountIn);
-    uint256 received = SUSHI.balanceOf(address(this)) - before;
 
-    SUSHI.safeTransfer(recipient, received);
+    SUSHI.safeTransfer(recipient, SUSHI.balanceOf(address(this)));
   }
 }
