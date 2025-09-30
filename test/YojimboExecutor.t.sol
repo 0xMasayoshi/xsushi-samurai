@@ -58,16 +58,16 @@ contract YojimboExecutorTest is Test {
         );
     }
 
-    function testEnterAllMinusOne() public {
+    function testEnterAll() public {
         SUSHI.mint(address(exec), 10 ether);
-        // amountIn = 0 => uses all - 1 wei
+        // amountIn = 0 => uses entire balance
         exec.enterSushiBar(0, recipient);
         assertGt(xSUSHI.balanceOf(recipient), 0, "xSUSHI minted");
-        // bar holds ~10 ether - 1 wei
+        // bar holds full executor balance
         assertEq(
             SUSHI.balanceOf(address(xSUSHI)),
-            10 ether - 1,
-            "bar sushi wrong"
+            10 ether,
+            "bar should hold entire executor balance"
         );
     }
 
@@ -86,19 +86,19 @@ contract YojimboExecutorTest is Test {
         assertGt(afterBal, before, "SUSHI not received");
     }
 
-    function testLeaveAllMinusOne() public {
+    function testLeaveAll() public {
         // mint and enter to get some xSUSHI onto executor
         SUSHI.mint(address(exec), 5 ether);
         exec.enterSushiBar(5 ether, address(exec));
         uint256 bal = xSUSHI.balanceOf(address(exec));
         assertGt(bal, 0, "executor must have xSUSHI");
 
-        exec.leaveSushiBar(0, recipient); // all minus 1
+        exec.leaveSushiBar(0, recipient); // use entire balance
         assertGt(SUSHI.balanceOf(recipient), 0, "recipient got SUSHI");
         assertEq(
             xSUSHI.balanceOf(address(exec)),
-            1,
-            "slot undrain protection kept 1"
+            0,
+            "executor should be emptied"
         );
     }
 

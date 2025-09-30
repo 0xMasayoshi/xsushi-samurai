@@ -21,13 +21,11 @@ contract YojimboExecutor {
   }
 
   /// @notice Deposit SUSHI -> mint xSUSHI, send to recipient
-  /// @param amountIn If 0, uses (SUSHI balance - 1)
+  /// @param amountIn If 0, uses SUSHI balance
   /// @param recipient Who receives xSUSHI
   function enterSushiBar(uint256 amountIn, address recipient) external {
     if (amountIn == 0) {
-      uint256 bal = SUSHI.balanceOf(address(this));
-      require(bal > 1, "no SUSHI");
-      unchecked { amountIn = bal - 1; }
+      amountIn = SUSHI.balanceOf(address(this));
     }
 
     uint256 beforeShares = xSUSHI.balanceOf(address(this));
@@ -38,13 +36,11 @@ contract YojimboExecutor {
   }
 
   /// @notice Burn xSUSHI -> withdraw SUSHI, send to recipient
-  /// @param amountIn If 0, uses (xSUSHI balance - 1)
+  /// @param amountIn If 0, uses xSUSHI balance
   /// @param recipient Who receives SUSHI
   function leaveSushiBar(uint256 amountIn, address recipient) external {
     if (amountIn == 0) {
-      uint256 bal = xSUSHI.balanceOf(address(this));
-      require(bal > 1, "no xSUSHI");
-      unchecked { amountIn = bal - 1; }
+      amountIn = xSUSHI.balanceOf(address(this));
     }
 
     IERC20 SUSHI = xSUSHI.sushi();
