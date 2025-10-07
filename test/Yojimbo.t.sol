@@ -4,13 +4,13 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "./mocks/MockERC20.sol";
 import "./mocks/MockSushiBar.sol";
-import "../src/YojimboExecutor.sol";
+import "../src/Yojimbo.sol";
 import "../src/RedSnwapper.sol";
 
-contract YojimboExecutorTest is Test {
+contract YojimboTest is Test {
     MockERC20 SUSHI;
     MockSushiBar xSUSHI;
-    YojimboExecutor exec;
+    Yojimbo yojimbo;
     RedSnwapper wrapper; // your facade that enforces minOut
 
     address user = address(0xBEEF);
@@ -19,7 +19,7 @@ contract YojimboExecutorTest is Test {
     function setUp() public {
         SUSHI = new MockERC20("SUSHI", "SUSHI");
         xSUSHI = new MockSushiBar(SUSHI);
-        exec = new YojimboExecutor(xSUSHI);
+        yojimbo = new Yojimbo(xSUSHI);
         wrapper = new RedSnwapper();
 
         // seed user with SUSHI
@@ -44,10 +44,10 @@ contract YojimboExecutorTest is Test {
 
     function testEnterExplicitAmount() public {
         // move tokens to executor (simulate RedSnwapper behaviour)
-        SUSHI.mint(address(exec), 10 ether);
+        SUSHI.mint(address(yojimbo), 10 ether);
 
         uint256 before = xSUSHI.balanceOf(recipient);
-        exec.enterSushiBar(5 ether, recipient);
+        yojimbo.enterSushiBar(5 ether, recipient);
         uint256 afterBal = xSUSHI.balanceOf(recipient);
 
         assertGt(afterBal, before, "xSUSHI not minted to recipient");
@@ -59,9 +59,9 @@ contract YojimboExecutorTest is Test {
     }
 
     function testEnterAll() public {
-        SUSHI.mint(address(exec), 10 ether);
+        SUSHI.mint(address(yojimbo), 10 ether);
         // amountIn = 0 => uses entire balance
-        exec.enterSushiBar(0, recipient);
+        yojimbo.enterSushiBar(0, recipient);
         assertGt(xSUSHI.balanceOf(recipient), 0, "xSUSHI minted");
         // bar holds full executor balance
         assertEq(
@@ -73,14 +73,14 @@ contract YojimboExecutorTest is Test {
 
     function testLeaveExplicitShares() public {
         // prepare: send SUSHI to executor and enter so it holds xSUSHI
-        SUSHI.mint(address(exec), 20 ether);
-        exec.enterSushiBar(10 ether, address(this)); // we receive xSUSHI
+        SUSHI.mint(address(yojimbo), 20 ether);
+        yojimbo.enterSushiBar(10 ether, address(this)); // we receive xSUSHI
         uint256 shares = xSUSHI.balanceOf(address(this));
         // give shares to executor to leave
-        IERC20(address(xSUSHI)).transfer(address(exec), shares);
+        IERC20(address(xSUSHI)).transfer(address(yojimbo), shares);
 
         uint256 before = SUSHI.balanceOf(recipient);
-        exec.leaveSushiBar(shares / 2, recipient);
+        yojimbo.leaveSushiBar(shares / 2, recipient);
         uint256 afterBal = SUSHI.balanceOf(recipient);
 
         assertGt(afterBal, before, "SUSHI not received");
@@ -88,15 +88,15 @@ contract YojimboExecutorTest is Test {
 
     function testLeaveAll() public {
         // mint and enter to get some xSUSHI onto executor
-        SUSHI.mint(address(exec), 5 ether);
-        exec.enterSushiBar(5 ether, address(exec));
-        uint256 bal = xSUSHI.balanceOf(address(exec));
+        SUSHI.mint(address(yojimbo), 5 ether);
+        yojimbo.enterSushiBar(5 ether, address(yojimbo));
+        uint256 bal = xSUSHI.balanceOf(address(yojimbo));
         assertGt(bal, 0, "executor must have xSUSHI");
 
-        exec.leaveSushiBar(0, recipient); // use entire balance
+        yojimbo.leaveSushiBar(0, recipient); // use entire balance
         assertGt(SUSHI.balanceOf(recipient), 0, "recipient got SUSHI");
         assertEq(
-            xSUSHI.balanceOf(address(exec)),
+            xSUSHI.balanceOf(address(yojimbo)),
             0,
             "executor should be emptied"
         );
@@ -104,7 +104,7 @@ contract YojimboExecutorTest is Test {
 
     function testQuoteEnterSushiBar() public {
         uint256 amountIn = 50 ether;
-        assertEq(exec.quoteEnterSushiBar(amountIn), amountIn, "first deposit should mint 1:1");
+        assertEq(yojimbo.quoteEnterSushiBar(amountIn), amountIn, "first deposit should mint 1:1");
 
         SUSHI.mint(address(this), 100 ether);
         SUSHI.approve(address(xSUSHI), type(uint256).max);
@@ -113,7 +113,7 @@ contract YojimboExecutorTest is Test {
         uint256 expected =
             (amountIn * xSUSHI.totalSupply()) /
             SUSHI.balanceOf(address(xSUSHI));
-        assertEq(exec.quoteEnterSushiBar(amountIn), expected, "quoteEnterSushiBar mismatches bar math");
+        assertEq(yojimbo.quoteEnterSushiBar(amountIn), expected, "quoteEnterSushiBar mismatches bar math");
     }
 
     function testQuoteLeaveSushiBar() public {
@@ -125,8 +125,8 @@ contract YojimboExecutorTest is Test {
         uint256 expected =
             (sharesIn * SUSHI.balanceOf(address(xSUSHI))) /
             xSUSHI.totalSupply();
-        assertEq(exec.quoteLeaveSushiBar(sharesIn), expected, "quoteLeaveSushiBar mismatches bar math");
-        assertEq(exec.quoteLeaveSushiBar(0), 0, "quoteLeaveSushiBar zero input should be zero");
+        assertEq(yojimbo.quoteLeaveSushiBar(sharesIn), expected, "quoteLeaveSushiBar mismatches bar math");
+        assertEq(yojimbo.quoteLeaveSushiBar(0), 0, "quoteLeaveSushiBar zero input should be zero");
     }
 
     /* ============ RedSnwapper integration (minOut enforced) ============ */
@@ -145,9 +145,9 @@ contract YojimboExecutorTest is Test {
             recipient,
             IERC20(address(xSUSHI)),
             minShares,
-            address(exec),
+            address(yojimbo),
             abi.encodeWithSelector(
-                YojimboExecutor.enterSushiBar.selector,
+                Yojimbo.enterSushiBar.selector,
                 amountIn,
                 recipient
             )
@@ -187,9 +187,9 @@ contract YojimboExecutorTest is Test {
             recipient,
             xSUSHI,
             tooHighMinShares,
-            address(exec),
+            address(yojimbo),
             abi.encodeWithSelector(
-                YojimboExecutor.enterSushiBar.selector,
+                Yojimbo.enterSushiBar.selector,
                 amountIn,
                 recipient
             )
@@ -217,9 +217,9 @@ contract YojimboExecutorTest is Test {
             recipient,
             IERC20(address(SUSHI)),
             expectedOut,
-            address(exec),
+            address(yojimbo),
             abi.encodeWithSelector(
-                YojimboExecutor.leaveSushiBar.selector,
+                Yojimbo.leaveSushiBar.selector,
                 sharesToBurn,
                 recipient
             )
@@ -260,9 +260,9 @@ contract YojimboExecutorTest is Test {
             recipient,
             IERC20(address(SUSHI)),
             tooHighMin,
-            address(exec),
+            address(yojimbo),
             abi.encodeWithSelector(
-                YojimboExecutor.leaveSushiBar.selector,
+                Yojimbo.leaveSushiBar.selector,
                 sharesToBurn,
                 recipient
             )

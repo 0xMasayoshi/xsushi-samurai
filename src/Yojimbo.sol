@@ -5,9 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/ISushiBar.sol";
 
-/// @title YojimboExecutor — minimal SushiBar executor for RedSnwapper
+/// @title Yojimbo — minimal SushiBar executor for RedSnwapper
 /// @notice Assumes RedSnwapper has already moved tokenIn to this contract and will enforce amountOutMin.
-contract YojimboExecutor {
+contract Yojimbo {
   using SafeERC20 for IERC20;
   using SafeERC20 for ISushiBar;
 
