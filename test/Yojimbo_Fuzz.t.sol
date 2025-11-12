@@ -14,11 +14,11 @@ pragma solidity ^0.8.20;
  *  - We bootstrap the bar with random liquidity so ratios are not always 1:1.
  */
 
-import "forge-std/Test.sol";
-import "./mocks/MockERC20.sol";
-import "./mocks/MockSushiBar.sol";
-import "../src/Yojimbo.sol";
-import "../src/RedSnwapper.sol";
+import {Test} from "forge-std/Test.sol";
+import {MockERC20} from "./mocks/MockERC20.sol";
+import {MockSushiBar} from "./mocks/MockSushiBar.sol";
+import {Yojimbo} from "../src/Yojimbo.sol";
+import {RedSnwapper, MinimalOutputBalanceViolation} from "../src/RedSnwapper.sol";
 
 contract YojimboFuzzTest is Test {
     MockERC20 SUSHI;

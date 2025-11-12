@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../../src/interfaces/ISushiBar.sol";
+import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ISushiBar} from "../../src/interfaces/ISushiBar.sol";
 
 contract MockSushiBar is ERC20("SushiBar", "xSUSHI"), ISushiBar {
     IERC20 public immutable sushi;

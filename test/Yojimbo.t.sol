@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import "./mocks/MockERC20.sol";
-import "./mocks/MockSushiBar.sol";
-import "../src/Yojimbo.sol";
-import "../src/RedSnwapper.sol";
+import {Test} from "forge-std/Test.sol";
+import {MockERC20} from "./mocks/MockERC20.sol";
+import {MockSushiBar} from "./mocks/MockSushiBar.sol";
+import {Yojimbo} from "../src/Yojimbo.sol";
+import {RedSnwapper, MinimalOutputBalanceViolation} from "../src/RedSnwapper.sol";
 
 /*
  * TEST INTENT
@@ -40,7 +40,7 @@ contract YojimboTest is Test {
         xSUSHI.approve(address(redSnwapper), type(uint256).max);
     }
 
-    function testConstructorSetsMaxAllowance() public {
+    function testConstructorSetsMaxAllowance() public view {
         assertEq(SUSHI.allowance(address(yojimbo), address(xSUSHI)), type(uint256).max, "max allowance not set");
     }
 
