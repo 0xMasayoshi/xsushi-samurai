@@ -33,7 +33,7 @@ contract YojimboFuzzTest is Test {
         SUSHI = new MockERC20("SUSHI", "SUSHI");
         xSUSHI = new MockSushiBar(SUSHI);
         yojimbo = new Yojimbo(xSUSHI);
-        redSnwapper  = new RedSnwapper();
+        redSnwapper = new RedSnwapper();
 
         // Seed user and approvals for RedSnwapper paths.
         SUSHI.mint(user, type(uint128).max); // plenty
@@ -57,7 +57,7 @@ contract YojimboFuzzTest is Test {
     function testFuzz_Enter_Parity_NoDust(uint96 seedSushiRaw, uint96 amountInRaw) public {
         // Keep values reasonable and non-zero.
         uint256 seedSushi = bound(uint256(seedSushiRaw), 1e9, 1_000_000e18);
-        uint256 amountIn  = bound(uint256(amountInRaw),   1,    1_000_000e18);
+        uint256 amountIn = bound(uint256(amountInRaw), 1, 1_000_000e18);
 
         // Randomize ratio (non-1:1) by bootstrapping the bar.
         _bootstrapBar(seedSushi);
@@ -94,7 +94,7 @@ contract YojimboFuzzTest is Test {
 
         uint256 shares = bound(uint256(sharesRaw), 1, maxShares);
         xSUSHI.transfer(address(yojimbo), shares);
-     
+
         uint256 quotedAmountOut = yojimbo.quoteLeaveSushiBar(shares);
 
         // Track recipient balance delta
@@ -114,7 +114,7 @@ contract YojimboFuzzTest is Test {
 
     function testFuzz_MinOut_Enter_PassAndRevert(uint96 seedSushiRaw, uint96 amountInRaw) public {
         uint256 seedSushi = bound(uint256(seedSushiRaw), 1e9, 1_000_000e18);
-        uint256 amountIn  = bound(uint256(amountInRaw),   1,    1_000_000e18);
+        uint256 amountIn = bound(uint256(amountInRaw), 1, 1_000_000e18);
 
         _bootstrapBar(seedSushi);
 
@@ -122,12 +122,10 @@ contract YojimboFuzzTest is Test {
         vm.startPrank(user);
 
         // Compute expected shares at call-time ratio.
-        uint256 sushiInBar  = SUSHI.balanceOf(address(xSUSHI));
+        uint256 sushiInBar = SUSHI.balanceOf(address(xSUSHI));
         uint256 totalShares = xSUSHI.totalSupply();
         // First deposit corner-case: if bar empty, expectedOut0 == amountIn (handled by math below).
-        uint256 expectedOut = (sushiInBar == 0 || totalShares == 0)
-            ? amountIn
-            : (amountIn * totalShares) / sushiInBar;
+        uint256 expectedOut = (sushiInBar == 0 || totalShares == 0) ? amountIn : (amountIn * totalShares) / sushiInBar;
 
         uint256 beforeSnapshot = vm.snapshot();
 
@@ -145,11 +143,7 @@ contract YojimboFuzzTest is Test {
         vm.revertTo(beforeSnapshot);
 
         // Min + 1 reverts.
-        bytes memory err = abi.encodeWithSelector(
-            MinimalOutputBalanceViolation.selector,
-            address(xSUSHI),
-            expectedOut
-        );
+        bytes memory err = abi.encodeWithSelector(MinimalOutputBalanceViolation.selector, address(xSUSHI), expectedOut);
         vm.expectRevert(err);
         redSnwapper.snwap(
             SUSHI,
@@ -170,10 +164,12 @@ contract YojimboFuzzTest is Test {
 
     /* --------------------- fuzz: minOut (leave) path -------------------- */
 
-    function testFuzz_MinOut_Leave_PassAndRevert(uint96 seedSushiRaw, uint96 sharesSeedRaw, uint96 sharesToBurnRaw) public {
-        uint256 seedSushi   = bound(uint256(seedSushiRaw),   1e9,  1_000_000e18);
-        uint256 sharesSeed  = bound(uint256(sharesSeedRaw),  1e9,  1_000_000e18); // user mints some xSUSHI
-        uint256 sharesToTry = bound(uint256(sharesToBurnRaw), 1,    1_000_000e18);
+    function testFuzz_MinOut_Leave_PassAndRevert(uint96 seedSushiRaw, uint96 sharesSeedRaw, uint96 sharesToBurnRaw)
+        public
+    {
+        uint256 seedSushi = bound(uint256(seedSushiRaw), 1e9, 1_000_000e18);
+        uint256 sharesSeed = bound(uint256(sharesSeedRaw), 1e9, 1_000_000e18); // user mints some xSUSHI
+        uint256 sharesToTry = bound(uint256(sharesToBurnRaw), 1, 1_000_000e18);
 
         _bootstrapBar(seedSushi);
 
@@ -188,7 +184,7 @@ contract YojimboFuzzTest is Test {
         uint256 burn = bound(sharesToTry, 1, userShares);
 
         // Compute expectedOut at current ratio.
-        uint256 sushiInBar  = SUSHI.balanceOf(address(xSUSHI));
+        uint256 sushiInBar = SUSHI.balanceOf(address(xSUSHI));
         uint256 totalShares = xSUSHI.totalSupply();
         uint256 expectedOut = (burn * sushiInBar) / totalShares;
 
@@ -208,11 +204,7 @@ contract YojimboFuzzTest is Test {
         vm.revertTo(beforeSnapshot);
 
         // Min + 1 reverts.
-        bytes memory err = abi.encodeWithSelector(
-            MinimalOutputBalanceViolation.selector,
-            address(SUSHI),
-            expectedOut
-        );
+        bytes memory err = abi.encodeWithSelector(MinimalOutputBalanceViolation.selector, address(SUSHI), expectedOut);
         vm.expectRevert(err);
         redSnwapper.snwap(
             xSUSHI,

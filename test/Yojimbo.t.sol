@@ -7,7 +7,7 @@ import "./mocks/MockSushiBar.sol";
 import "../src/Yojimbo.sol";
 import "../src/RedSnwapper.sol";
 
-/* 
+/*
  * TEST INTENT
  * - Exercise Yojimbo’s minimal executor surface (enter/leave) and prove:
  *   (1) Directional no-dust: after enter -> no xSUSHI left on executor; after leave -> no SUSHI left.
@@ -41,17 +41,13 @@ contract YojimboTest is Test {
     }
 
     function testConstructorSetsMaxAllowance() public {
-        assertEq(
-            SUSHI.allowance(address(yojimbo), address(xSUSHI)),
-            type(uint256).max,
-            "max allowance not set"
-        );
+        assertEq(SUSHI.allowance(address(yojimbo), address(xSUSHI)), type(uint256).max, "max allowance not set");
     }
 
     /* ============ direct executor tests (without minOut) ============ */
 
     function testEnterExplicitAmount() public {
-        uint amount = 5 ether;
+        uint256 amount = 5 ether;
 
         // Simulate router behavior - pre-fund executor
         SUSHI.mint(address(yojimbo), amount);
@@ -61,11 +57,7 @@ contract YojimboTest is Test {
         uint256 afterBal = xSUSHI.balanceOf(recipient);
 
         assertGt(afterBal, before, "xSUSHI not minted to recipient");
-        assertEq(
-            SUSHI.balanceOf(address(xSUSHI)),
-            amount,
-            "bar should hold SUSHI"
-        );
+        assertEq(SUSHI.balanceOf(address(xSUSHI)), amount, "bar should hold SUSHI");
         // Directional no-dust: after enter, executor should NOT retain xSUSHI it just minted.
         assertEq(xSUSHI.balanceOf(address(yojimbo)), 0, "executor should not retain xSUSHI");
     }
@@ -76,17 +68,13 @@ contract YojimboTest is Test {
         yojimbo.enterSushiBar(0, recipient);
         assertGt(xSUSHI.balanceOf(recipient), 0, "xSUSHI minted");
         // bar holds full executor balance
-        assertEq(
-            SUSHI.balanceOf(address(xSUSHI)),
-            10 ether,
-            "bar should hold entire executor balance"
-        );
+        assertEq(SUSHI.balanceOf(address(xSUSHI)), 10 ether, "bar should hold entire executor balance");
         assertEq(SUSHI.balanceOf(address(yojimbo)), 0, "executor should not retain SUSHI");
         assertEq(xSUSHI.balanceOf(address(yojimbo)), 0, "executor should not retain xSUSHI");
     }
 
     function testLeaveExplicitShares() public {
-        uint amount = 10 ether;
+        uint256 amount = 10 ether;
 
         SUSHI.mint(address(yojimbo), amount);
         yojimbo.enterSushiBar(amount, address(this)); // we receive xSUSHI
@@ -112,11 +100,7 @@ contract YojimboTest is Test {
         // amountIn = 0 => full-balance mode: executor should be emptied of both tokens.
         yojimbo.leaveSushiBar(0, recipient);
         assertGt(SUSHI.balanceOf(recipient), 0, "recipient got SUSHI");
-        assertEq(
-            xSUSHI.balanceOf(address(yojimbo)),
-            0,
-            "executor should be emptied"
-        );
+        assertEq(xSUSHI.balanceOf(address(yojimbo)), 0, "executor should be emptied");
         assertEq(SUSHI.balanceOf(address(yojimbo)), 0, "executor should not retain SUSHI");
         assertEq(xSUSHI.balanceOf(address(yojimbo)), 0, "executor should not retain xSUSHI");
     }
@@ -129,9 +113,7 @@ contract YojimboTest is Test {
         SUSHI.approve(address(xSUSHI), type(uint256).max);
         xSUSHI.enter(100 ether);
 
-        uint256 expected =
-            (amountIn * xSUSHI.totalSupply()) /
-            SUSHI.balanceOf(address(xSUSHI));
+        uint256 expected = (amountIn * xSUSHI.totalSupply()) / SUSHI.balanceOf(address(xSUSHI));
         assertEq(yojimbo.quoteEnterSushiBar(amountIn), expected, "quoteEnterSushiBar mismatches bar math");
         assertEq(SUSHI.balanceOf(address(yojimbo)), 0, "executor should not retain SUSHI");
         assertEq(xSUSHI.balanceOf(address(yojimbo)), 0, "executor should not retain xSUSHI");
@@ -140,7 +122,7 @@ contract YojimboTest is Test {
     function testEnterQuoteMatchesActual() public {
         // Parity check: quoted mint == actual mint under same state.
         SUSHI.mint(address(yojimbo), 123 ether);
-        uint q = yojimbo.quoteEnterSushiBar(123 ether);
+        uint256 q = yojimbo.quoteEnterSushiBar(123 ether);
         yojimbo.enterSushiBar(123 ether, address(this));
         assertEq(xSUSHI.balanceOf(address(this)), q, "quote != actual");
     }
@@ -151,9 +133,7 @@ contract YojimboTest is Test {
         xSUSHI.enter(120 ether);
 
         uint256 sharesIn = 40 ether;
-        uint256 expected =
-            (sharesIn * SUSHI.balanceOf(address(xSUSHI))) /
-            xSUSHI.totalSupply();
+        uint256 expected = (sharesIn * SUSHI.balanceOf(address(xSUSHI))) / xSUSHI.totalSupply();
         assertEq(yojimbo.quoteLeaveSushiBar(sharesIn), expected, "quoteLeaveSushiBar mismatches bar math");
         assertEq(yojimbo.quoteLeaveSushiBar(0), 0, "quoteLeaveSushiBar zero input should be zero");
         assertEq(SUSHI.balanceOf(address(yojimbo)), 0, "executor should not retain SUSHI");
@@ -166,9 +146,9 @@ contract YojimboTest is Test {
         SUSHI.approve(address(xSUSHI), type(uint256).max);
         xSUSHI.enter(200 ether);
 
-        uint shares = 77 ether;
+        uint256 shares = 77 ether;
         xSUSHI.transfer(address(yojimbo), shares);
-        uint q = yojimbo.quoteLeaveSushiBar(shares);
+        uint256 q = yojimbo.quoteLeaveSushiBar(shares);
         yojimbo.leaveSushiBar(shares, address(this));
         assertEq(SUSHI.balanceOf(address(this)), q, "quote != actual");
     }
@@ -179,10 +159,10 @@ contract YojimboTest is Test {
         // SUCCESS path: minOut == actualOut should pass.
 
         // user calls RedSnwapper.snwap to deposit SUSHI -> xSUSHI to recipient
-        uint amountIn = 100 ether;
+        uint256 amountIn = 100 ether;
 
         // pre-compute expected shares (first deposit => shares == amount)
-        uint minShares = 100 ether; // set min equal to expected
+        uint256 minShares = 100 ether; // set min equal to expected
 
         vm.prank(user);
         redSnwapper.snwap(
@@ -192,18 +172,10 @@ contract YojimboTest is Test {
             xSUSHI,
             minShares,
             address(yojimbo),
-            abi.encodeWithSelector(
-                Yojimbo.enterSushiBar.selector,
-                amountIn,
-                recipient
-            )
+            abi.encodeWithSelector(Yojimbo.enterSushiBar.selector, amountIn, recipient)
         );
 
-        assertEq(
-            xSUSHI.balanceOf(recipient),
-            minShares,
-            "recipient should receive shares >= min"
-        );
+        assertEq(xSUSHI.balanceOf(recipient), minShares, "recipient should receive shares >= min");
         assertEq(SUSHI.balanceOf(address(xSUSHI)), amountIn, "bar sushi wrong");
         assertEq(SUSHI.balanceOf(address(yojimbo)), 0, "executor should not retain SUSHI");
         assertEq(xSUSHI.balanceOf(address(yojimbo)), 0, "executor should not retain xSUSHI");
@@ -219,19 +191,15 @@ contract YojimboTest is Test {
         SUSHI.approve(address(xSUSHI), type(uint256).max);
         xSUSHI.enter(100 ether); // now totalShares=100, barSushi=100
 
-        uint amountIn = 50 ether;
-        uint sushiInBar = SUSHI.balanceOf(address(xSUSHI));
-        uint totalShares = xSUSHI.totalSupply();
-        uint expectedOut = (amountIn * totalShares) / sushiInBar;
+        uint256 amountIn = 50 ether;
+        uint256 sushiInBar = SUSHI.balanceOf(address(xSUSHI));
+        uint256 totalShares = xSUSHI.totalSupply();
+        uint256 expectedOut = (amountIn * totalShares) / sushiInBar;
 
         // user wants 50 in, but we force min too high to trigger revert:
-        uint tooHighMinShares = expectedOut + 1;
+        uint256 tooHighMinShares = expectedOut + 1;
 
-        bytes memory err = abi.encodeWithSelector(
-            MinimalOutputBalanceViolation.selector,
-            address(xSUSHI),
-            expectedOut 
-        );
+        bytes memory err = abi.encodeWithSelector(MinimalOutputBalanceViolation.selector, address(xSUSHI), expectedOut);
         vm.expectRevert(err);
         vm.prank(user);
         redSnwapper.snwap(
@@ -241,11 +209,7 @@ contract YojimboTest is Test {
             xSUSHI,
             tooHighMinShares,
             address(yojimbo),
-            abi.encodeWithSelector(
-                Yojimbo.enterSushiBar.selector,
-                amountIn,
-                recipient
-            )
+            abi.encodeWithSelector(Yojimbo.enterSushiBar.selector, amountIn, recipient)
         );
     }
 
@@ -260,10 +224,10 @@ contract YojimboTest is Test {
         // approve RedSnwapper to move user's xSUSHI (already done in setUp, but ok)
         xSUSHI.approve(address(redSnwapper), type(uint256).max);
 
-        uint sharesToBurn = 40 ether;
-        uint sushiInBar = SUSHI.balanceOf(address(xSUSHI));
-        uint totalShares = xSUSHI.totalSupply();
-        uint expectedOut = (sharesToBurn * sushiInBar) / totalShares;
+        uint256 sharesToBurn = 40 ether;
+        uint256 sushiInBar = SUSHI.balanceOf(address(xSUSHI));
+        uint256 totalShares = xSUSHI.totalSupply();
+        uint256 expectedOut = (sharesToBurn * sushiInBar) / totalShares;
 
         // Set minOut to expectedOut
         redSnwapper.snwap(
@@ -273,19 +237,11 @@ contract YojimboTest is Test {
             SUSHI,
             expectedOut,
             address(yojimbo),
-            abi.encodeWithSelector(
-                Yojimbo.leaveSushiBar.selector,
-                sharesToBurn,
-                recipient
-            )
+            abi.encodeWithSelector(Yojimbo.leaveSushiBar.selector, sharesToBurn, recipient)
         );
         vm.stopPrank();
 
-        assertEq(
-            SUSHI.balanceOf(recipient),
-            expectedOut,
-            "recipient received SUSHI >= min"
-        );
+        assertEq(SUSHI.balanceOf(recipient), expectedOut, "recipient received SUSHI >= min");
         assertEq(SUSHI.balanceOf(address(yojimbo)), 0, "executor should not retain SUSHI");
         assertEq(xSUSHI.balanceOf(address(yojimbo)), 0, "executor should not retain xSUSHI");
     }
@@ -297,19 +253,15 @@ contract YojimboTest is Test {
         xSUSHI.enter(60 ether);
         xSUSHI.approve(address(redSnwapper), type(uint256).max);
 
-        uint sharesToBurn = 30 ether;
-        uint sushiInBar = SUSHI.balanceOf(address(xSUSHI));
-        uint totalShares = xSUSHI.totalSupply();
-        uint expectedOut = (sharesToBurn * sushiInBar) / totalShares;
+        uint256 sharesToBurn = 30 ether;
+        uint256 sushiInBar = SUSHI.balanceOf(address(xSUSHI));
+        uint256 totalShares = xSUSHI.totalSupply();
+        uint256 expectedOut = (sharesToBurn * sushiInBar) / totalShares;
 
         // Require more than expected to trigger revert
-        uint tooHighMin = expectedOut + 1;
+        uint256 tooHighMin = expectedOut + 1;
 
-        bytes memory err = abi.encodeWithSelector(
-            MinimalOutputBalanceViolation.selector,
-            address(SUSHI),
-            expectedOut 
-        );
+        bytes memory err = abi.encodeWithSelector(MinimalOutputBalanceViolation.selector, address(SUSHI), expectedOut);
         vm.expectRevert(err);
         redSnwapper.snwap(
             xSUSHI,
@@ -318,11 +270,7 @@ contract YojimboTest is Test {
             SUSHI,
             tooHighMin,
             address(yojimbo),
-            abi.encodeWithSelector(
-                Yojimbo.leaveSushiBar.selector,
-                sharesToBurn,
-                recipient
-            )
+            abi.encodeWithSelector(Yojimbo.leaveSushiBar.selector, sharesToBurn, recipient)
         );
         vm.stopPrank();
     }
